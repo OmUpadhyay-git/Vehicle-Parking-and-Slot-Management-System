@@ -1,0 +1,248 @@
+package ui;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
+import service.ApiService;
+
+public class HistoryPanel extends JPanel {
+
+    private JTextField searchField;
+    private JButton searchBtn;
+    private JTable historyTable;
+    private DefaultTableModel tableModel;
+    private ApiService apiService;
+
+    public HistoryPanel() {
+        apiService = new ApiService();
+        initUI();
+    }
+
+    private void initUI() {
+        setLayout(new BorderLayout());
+        setBackground(Color.WHITE);
+
+        // Top bar
+        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topBar.setBackground(new Color(236, 240, 241));
+        JLabel titleLabel = new JLabel("  Parking History");
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        topBar.add(titleLabel);
+        add(topBar, BorderLayout.NORTH);
+
+        // Toolbar
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        toolbar.setBackground(Color.WHITE);
+
+        searchField = new JTextField(20);
+        searchField.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        searchField.setPreferredSize(new Dimension(200, 30));
+        toolbar.add(new JLabel("Search:"));
+        toolbar.add(searchField);
+
+        searchBtn = new JButton("SEARCH");
+        searchBtn.setFont(new Font("SansSerif", Font.BOLD, 11));
+        searchBtn.setBackground(new Color(52, 152, 219));
+        searchBtn.setForeground(Color.WHITE);
+        searchBtn.setFocusPainted(false);
+        toolbar.add(searchBtn);
+
+        add(toolbar, BorderLayout.CENTER);
+
+        // Table
+        String[] columns = {"Vehicle", "Slot", "Entry", "Exit", "Duration", "Fee", "Payment"};
+        tableModel = new DefaultTableModel(columns, 0) {
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        historyTable = new JTable(tableModel);
+        historyTable.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        historyTable.setRowHeight(28);
+        historyTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        historyTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 13));
+        historyTable.getTableHeader().setBackground(new Color(236, 240, 241));
+
+        // Payment status coloring
+        historyTable.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    c.setBackground(Color.WHITE);
+                    if (column == 6) {
+                        String status = String.valueOf(value);
+                        if ("PAID".equals(status)) {
+                            setForeground(new Color(39, 174, 96));
+                        } else {
+                            setForeground(new Color(231, 76, 60));
+                        }
+                    } else {
+                        setForeground(Color.BLACK);
+                    }
+                }
+                return c;
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(historyTable);
+        add(scrollPane, BorderLayout.SOUTH);
+
+        loadHistory();
+
+        searchBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String query = searchField.getText().trim();
+                if (query.isEmpty()) {
+                    loadHistory();
+                } else {
+                    loadHistory();
+                }
+            }
+        });
+
+        searchField.addActionListener(e -> {
+            String query = searchField.getText().trim();
+            if (query.isEmpty()) {
+                loadHistory();
+            } else {
+                loadHistory();
+            }
+        });
+    }
+
+    private void loadHistory() {
+        new Thread(() -> {
+            String response = apiService.getParkingHistory();
+            SwingUtilities.invokeLater(() -> {
+                parseAndDisplayHistory(response);
+            });
+        }).start();
+    }
+
+    private void parseAndDisplayHistory(String response) {
+        tableModel.setRowCount(0);
+        try {
+            if (!response.contains("\"success\":true")) return;
+
+            int dataIndex = response.indexOf("\"data\":[");
+            if (dataIndex == -1) return;
+            int arrStart = response.indexOf("[", dataIndex);
+            int arrEnd = response.lastIndexOf("]");
+            String arrContent = response.substring(arrStart + 1, arrEnd).trim();
+            if (arrContent.isEmpty()) return;
+
+            String searchQuery = searchField.getText().trim().toUpperCase();
+
+            int i = 0;
+            while (i < arrContent.length()) {
+                int objStart = arrContent.indexOf("{", i);
+                if (objStart == -1) break;
+                int objEnd = arrContent.indexOf("}", objStart);
+                if (objEnd == -1) break;
+
+                String obj = arrContent.substring(objStart, objEnd + 1);
+                String vNum = extractField(obj, "vehicle_number");
+                String slotNum = extractField(obj, "slot_number");
+                String entryTime = extractField(obj, "entry_time");
+                String exitTime = extractField(obj, "exit_time");
+                int durationMin = extractJsonInt(obj, "duration_minutes");
+                double fee = extractJsonDouble(obj, "fee");
+                String paymentStatus = extractField(obj, "payment_status");
+                String paymentMethod = extractField(obj, "payment_method");
+
+                // Filter by search query
+                if (!searchQuery.isEmpty() && !vNum.toUpperCase().contains(searchQuery)) {
+                    i = objEnd + 1;
+                    continue;
+                }
+
+                String entry = formatDateTime(entryTime);
+                String exit = formatDateTime(exitTime);
+                String duration = formatDuration(durationMin);
+                String feeStr = "Rs. " + String.format("%.0f", fee);
+                String payment = paymentStatus.isEmpty() ? "PENDING" : paymentStatus;
+
+                tableModel.addRow(new Object[]{vNum, slotNum, entry, exit, duration, feeStr, payment});
+                i = objEnd + 1;
+            }
+        } catch (Exception e) {
+            // Keep empty table
+        }
+    }
+
+    private String formatDateTime(String isoDateTime) {
+        try {
+            if (isoDateTime == null || isoDateTime.isEmpty()) return "-";
+            if (isoDateTime.length() >= 16) {
+                String date = isoDateTime.substring(0, 10);
+                String time = isoDateTime.substring(11, 16);
+                return date + " " + time;
+            }
+            return isoDateTime;
+        } catch (Exception e) {
+            return isoDateTime;
+        }
+    }
+
+    private String formatDuration(int minutes) {
+        if (minutes <= 0) return "-";
+        long hrs = minutes / 60;
+        long mins = minutes % 60;
+        if (hrs > 0 && mins > 0) {
+            return hrs + "h " + mins + "m";
+        } else if (hrs > 0) {
+            return hrs + "h";
+        } else {
+            return mins + "m";
+        }
+    }
+
+    private String extractField(String json, String key) {
+        String searchKey = "\"" + key + "\":\"";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) return "";
+        startIndex += searchKey.length();
+        int endIndex = json.indexOf("\"", startIndex);
+        if (endIndex == -1) return "";
+        return json.substring(startIndex, endIndex);
+    }
+
+    private int extractJsonInt(String json, String key) {
+        String searchKey = "\"" + key + "\":";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) return 0;
+        startIndex += searchKey.length();
+        int endIndex = startIndex;
+        while (endIndex < json.length() && (Character.isDigit(json.charAt(endIndex)) || json.charAt(endIndex) == '-')) {
+            endIndex++;
+        }
+        try {
+            return Integer.parseInt(json.substring(startIndex, endIndex));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private double extractJsonDouble(String json, String key) {
+        String searchKey = "\"" + key + "\":";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) return 0.0;
+        startIndex += searchKey.length();
+        int endIndex = startIndex;
+        while (endIndex < json.length() && (Character.isDigit(json.charAt(endIndex)) || json.charAt(endIndex) == '.' || json.charAt(endIndex) == '-')) {
+            endIndex++;
+        }
+        try {
+            return Double.parseDouble(json.substring(startIndex, endIndex));
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+}

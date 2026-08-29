@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+bin/
+build/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary & Log files
+*.tmp
+*.log
+*.bak
+
+# Backend data (MySQL dump, SQLite, etc.)
+backend/*.db
+backend/*.sqlite
+backend/*.sql
+database/*.sql
+!database/schema.sql
+
+# Python virtual env
+backend/venv/
+backend/.venv/
+
+# Documentation (keep docs/ but ignore duplicates)
+Markdown File/
+
+# Notes
+NOTES/
