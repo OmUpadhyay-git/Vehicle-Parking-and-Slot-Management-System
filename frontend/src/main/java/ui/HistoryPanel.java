@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 import service.ApiService;
+import service.JsonHelper;
 
 public class HistoryPanel extends JPanel {
 
@@ -148,14 +149,14 @@ public class HistoryPanel extends JPanel {
                 if (objEnd == -1) break;
 
                 String obj = arrContent.substring(objStart, objEnd + 1);
-                String vNum = extractField(obj, "vehicle_number");
-                String slotNum = extractField(obj, "slot_number");
-                String entryTime = extractField(obj, "entry_time");
-                String exitTime = extractField(obj, "exit_time");
-                int durationMin = extractJsonInt(obj, "duration_minutes");
-                double fee = extractJsonDouble(obj, "fee");
-                String paymentStatus = extractField(obj, "payment_status");
-                String paymentMethod = extractField(obj, "payment_method");
+                String vNum = JsonHelper.extractField(obj, "vehicle_number");
+                String slotNum = JsonHelper.extractField(obj, "slot_number");
+                String entryTime = JsonHelper.extractField(obj, "entry_time");
+                String exitTime = JsonHelper.extractField(obj, "exit_time");
+                int durationMin = JsonHelper.extractJsonInt(obj, "duration_minutes");
+                double fee = JsonHelper.extractJsonDouble(obj, "fee");
+                String paymentStatus = JsonHelper.extractField(obj, "payment_status");
+                String paymentMethod = JsonHelper.extractField(obj, "payment_method");
 
                 // Filter by search query
                 if (!searchQuery.isEmpty() && !vNum.toUpperCase().contains(searchQuery)) {
@@ -163,9 +164,9 @@ public class HistoryPanel extends JPanel {
                     continue;
                 }
 
-                String entry = formatDateTime(entryTime);
-                String exit = formatDateTime(exitTime);
-                String duration = formatDuration(durationMin);
+                String entry = JsonHelper.formatDateTime(entryTime);
+                String exit = JsonHelper.formatDateTime(exitTime);
+                String duration = JsonHelper.formatDuration(durationMin);
                 String feeStr = "Rs. " + String.format("%.0f", fee);
                 String payment = paymentStatus.isEmpty() ? "PENDING" : paymentStatus;
 
@@ -174,75 +175,6 @@ public class HistoryPanel extends JPanel {
             }
         } catch (Exception e) {
             // Keep empty table
-        }
-    }
-
-    private String formatDateTime(String isoDateTime) {
-        try {
-            if (isoDateTime == null || isoDateTime.isEmpty()) return "-";
-            if (isoDateTime.length() >= 16) {
-                String date = isoDateTime.substring(0, 10);
-                String time = isoDateTime.substring(11, 16);
-                return date + " " + time;
-            }
-            return isoDateTime;
-        } catch (Exception e) {
-            return isoDateTime;
-        }
-    }
-
-    private String formatDuration(int minutes) {
-        if (minutes <= 0) return "-";
-        long hrs = minutes / 60;
-        long mins = minutes % 60;
-        if (hrs > 0 && mins > 0) {
-            return hrs + "h " + mins + "m";
-        } else if (hrs > 0) {
-            return hrs + "h";
-        } else {
-            return mins + "m";
-        }
-    }
-
-    private String extractField(String json, String key) {
-        String searchKey = "\"" + key + "\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
-    }
-
-    private int extractJsonInt(String json, String key) {
-        String searchKey = "\"" + key + "\":";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return 0;
-        startIndex += searchKey.length();
-        int endIndex = startIndex;
-        while (endIndex < json.length() && (Character.isDigit(json.charAt(endIndex)) || json.charAt(endIndex) == '-')) {
-            endIndex++;
-        }
-        try {
-            return Integer.parseInt(json.substring(startIndex, endIndex));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    private double extractJsonDouble(String json, String key) {
-        String searchKey = "\"" + key + "\":";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return 0.0;
-        startIndex += searchKey.length();
-        int endIndex = startIndex;
-        while (endIndex < json.length() && (Character.isDigit(json.charAt(endIndex)) || json.charAt(endIndex) == '.' || json.charAt(endIndex) == '-')) {
-            endIndex++;
-        }
-        try {
-            return Double.parseDouble(json.substring(startIndex, endIndex));
-        } catch (NumberFormatException e) {
-            return 0.0;
         }
     }
 }

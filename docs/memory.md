@@ -18,6 +18,7 @@ Vehicle Parking and Slot Management System — a desktop application for managin
 - Java never connects directly to MySQL
 - All business logic lives in Python backend
 - Backend returns consistent JSON responses with `success`, `message`, `data` fields
+- Shared JSON parsing utilities in `service/JsonHelper.java` (no external JSON library)
 
 ## Database Status
 
@@ -36,6 +37,7 @@ Vehicle Parking and Slot Management System — a desktop application for managin
 - `.env` — created with correct credentials
 - **Models**: all 5 models with full relationships (back_populates, ForeignKey)
 - **Schemas**: all 5 schema files with request/response Pydantic models
+  - `ParkingRecordResponse` includes optional fields: `vehicle_type`, `duration_minutes`, `payment_status`, `payment_method` (for history responses)
 - **Routes**: all 6 route files fully implemented
   - auth.py: POST /login (validate credentials, return user info)
   - vehicles.py: POST/GET/GET/{id}/GET/search/{number}
@@ -46,29 +48,42 @@ Vehicle Parking and Slot Management System — a desktop application for managin
 - **Services**: fully implemented
   - fee_service.py: calculate_fee() with CAR (40/20) and BIKE (20/10) rates, partial hour rounding
   - parking_service.py: park_vehicle(), exit_vehicle(), get_active_parking_records(), get_parking_history(), get_dashboard_stats()
+  - auth_service.py: PBKDF2-SHA256 password hashing and verification
 - Routes registered in `main.py` with CORS middleware
 
 ## Frontend Status
 
-### Completed Today
+### Model Classes (5 files)
 
-- **Model classes** — All 5 models with full getters/setters/constructors:
-  - `User.java` (userId, name, username, password, role)
-  - `Vehicle.java` (vehicleId, vehicleNumber, vehicleType, ownerName, ownerPhone)
-  - `ParkingSlot.java` (slotId, slotNumber, vehicleType, status)
-  - `ParkingRecord.java` (recordId, vehicleId, slotId, entryTime, exitTime, duration, fee, status)
-  - `Payment.java` (paymentId, recordId, amount, paymentMethod, paymentTime, status)
+- `User.java` — userId, name, username, password, role
+- `Vehicle.java` — vehicleId, vehicleNumber, vehicleType, ownerName, ownerPhone
+- `ParkingSlot.java` — slotId, slotNumber, vehicleType, status
+- `ParkingRecord.java` — recordId, vehicleId, slotId, entryTime, exitTime, duration, fee, status
+- `Payment.java` — paymentId, recordId, amount, paymentMethod, paymentTime, status
 
-- **ApiService.java** — HTTP helper with method stubs for all endpoints:
+### Service Classes (2 files)
+
+- **ApiService.java** — HTTP helper with methods for all 13 endpoints:
   - Auth: login()
   - Vehicles: createVehicle(), getVehicles(), getVehicle(), searchVehicle()
   - Slots: createSlot(), getSlots(), getAvailableSlots(), getOccupiedSlots(), updateSlot()
   - Parking: parkVehicle(), exitVehicle(), getActiveParking(), getParkingHistory()
   - Payments: createPayment(), getPayments(), getPayment()
   - Dashboard: getDashboard()
-  - HTTP helper: sendRequest() for GET/POST/PUT
+  - HTTP helper: sendRequest() for GET/POST/PUT with 5s timeouts
 
-- **Main.java** — Launches LoginFrame with system look and feel
+- **JsonHelper.java** (NEW) — Shared static utility methods for JSON parsing:
+  - `extractField(json, key)` — Extract string value from JSON
+  - `extractJsonInt(json, key)` — Extract integer value from JSON
+  - `extractJsonDouble(json, key)` — Extract double value from JSON
+  - `extractMessage(json, key)` — Extract message field from API response
+  - `formatDateTime(isoDateTime)` — Convert ISO timestamp to "YYYY-MM-DD HH:MM"
+  - `formatDuration(minutes)` — Convert minutes to "Xh Ym" format
+  - Used by: VehiclePanel, SlotPanel, ParkingEntryPanel, ParkingExitPanel, HistoryPanel, DashboardPanel, PaymentPanel
+
+### UI Classes (9 files)
+
+- **Main.java** — Entry point, launches LoginFrame with system look and feel
 
 - **LoginFrame.java** — Professional split-panel login UI:
   - Left branding panel (dark, parking icon, title, feature text, version)
@@ -82,22 +97,25 @@ Vehicle Parking and Slot Management System — a desktop application for managin
 
 - **DashboardFrame.java** — Main application frame:
   - Sidebar navigation with role-based menu (Admin/Staff)
-  - CardLayout for panel switching
+  - CardLayout for panel switching (DASHBOARD, VEHICLES, SLOTS, ENTRY, EXIT, HISTORY)
   - Logout with confirmation dialog
   - Sidebar button highlighting on selection
   - Mouse hover effects
+  - "Parking Slots" menu visible only for ADMIN role
 
 - **DashboardPanel.java** — Dashboard cards:
-  - 5 stat cards: Total Slots, Available, Occupied, Active Vehicles, Revenue
-  - Color-coded cards (blue, green, red, purple, yellow)
-  - updateStats() method ready for API data
+  - 5 stat cards: Total Slots (blue), Available (green), Occupied (red), Active Vehicles (purple), Revenue (orange)
+  - Fetches data from GET /dashboard via ApiService
+  - Uses JsonHelper for JSON parsing
+  - refreshData() method for manual refresh
 
 - **VehiclePanel.java** — Vehicle management:
-  - Search field + Search button
-  - Add Vehicle button
+  - Search field + Search button + ADD VEHICLE button
   - Vehicle table (Vehicle No, Type, Owner Name, Phone)
   - Add Vehicle dialog with form validation
-  - Placeholder data loaded
+  - Loads vehicles from GET /vehicles via ApiService
+  - Searches via GET /vehicles/search/{number}
+  - Creates via POST /vehicles
 
 - **SlotPanel.java** — Parking slot management:
   - Add Slot button
@@ -106,38 +124,43 @@ Vehicle Parking and Slot Management System — a desktop application for managin
   - Color-coded status cells (green=AVAILABLE, red=OCCUPIED)
   - Grid visualization with slot boxes colored by status
   - Add Slot dialog
+  - Loads from GET /slots, creates via POST /slots
 
 - **ParkingEntryPanel.java** — Vehicle entry:
   - Vehicle number input + Search button
-  - Vehicle type display
-  - Available slot dropdown
-  - Entry time display
-  - Park Vehicle button
-  - Confirmation dialog
-  - Status feedback
+  - Vehicle type display (auto-populated from search)
+  - Available slot dropdown (filtered by vehicle type)
+  - Entry time display (auto-generated)
+  - Park Vehicle button with confirmation dialog
+  - Loads available slots from GET /slots/available
+  - Searches vehicle via GET /vehicles/search/{number}
+  - Parks via POST /parking/entry
 
 - **ParkingExitPanel.java** — Vehicle exit:
   - Vehicle number search
   - Vehicle details display (type, slot, entry time)
-  - Exit time, duration, fee display
-  - Payment method selection
-  - Complete Exit button
-  - Confirmation dialog
+  - Exit time, duration, fee display (calculated client-side for preview)
+  - Payment method selection (CASH, UPI, CARD)
+  - Complete Exit button with confirmation dialog
+  - Searches active records via GET /parking/active
+  - Exits via POST /parking/exit (which also records payment)
 
-- **PaymentPanel.java** — Payment display:
+- **PaymentPanel.java** — Payment display (standalone, not in DashboardFrame navigation):
   - Vehicle number, slot, fee display
   - Payment method selection (Cash, UPI, Card)
-  - Pay button
-  - Confirmation dialog
-  - Success message
+  - Pay button with confirmation dialog
+  - Calls POST /payments via ApiService.createPayment()
+  - Success/error feedback
+  - Note: ParkingExitPanel handles payment inline; this panel is available for future use
 
 - **HistoryPanel.java** — Parking history:
-  - Search field
+  - Search field (client-side filter by vehicle number)
   - History table (Vehicle, Slot, Entry, Exit, Duration, Fee, Payment)
   - Color-coded payment status (green=PAID, red=PENDING)
-  - Placeholder data
+  - Loads from GET /parking/history via ApiService
+  - Uses JsonHelper for formatting dates and durations
 
-### Files Changed
+### Files List (17 Java files)
 
 - `frontend/src/main/java/Main.java`
 - `frontend/src/main/java/model/User.java`
@@ -146,9 +169,10 @@ Vehicle Parking and Slot Management System — a desktop application for managin
 - `frontend/src/main/java/model/ParkingRecord.java`
 - `frontend/src/main/java/model/Payment.java`
 - `frontend/src/main/java/service/ApiService.java`
+- `frontend/src/main/java/service/JsonHelper.java`
 - `frontend/src/main/java/ui/LoginFrame.java`
 - `frontend/src/main/java/ui/DashboardFrame.java`
-- `frontend/src/main/java/ui/DashboardPanel.java` (NEW)
+- `frontend/src/main/java/ui/DashboardPanel.java`
 - `frontend/src/main/java/ui/VehiclePanel.java`
 - `frontend/src/main/java/ui/SlotPanel.java`
 - `frontend/src/main/java/ui/ParkingEntryPanel.java`
@@ -158,9 +182,13 @@ Vehicle Parking and Slot Management System — a desktop application for managin
 
 ### Verified
 
-- All 16 Java files compile successfully (37 .class files)
+- All 17 Java files compile successfully (38 .class files)
 - Application launches and shows login frame
 - No compilation errors
+- All Python imports pass
+- ParkingRecordResponse schema validates with new fields
+- All 27 API endpoint tests pass
+- All 58 unit tests pass
 
 ## Business Rules
 
@@ -176,7 +204,7 @@ Vehicle Parking and Slot Management System — a desktop application for managin
 
 ## Current Development Phase
 
-Phase 4 — Integration & Testing (COMPLETE)
+Phase 5 — Final QA, End-to-End Testing & Project Completion (COMPLETE)
 
 ## Completed Work
 
@@ -204,18 +232,26 @@ Phase 4 — Integration & Testing (COMPLETE)
 - **Auto-seeding in main.py (users + slots on startup)**
 - **User om/om created for general access**
 - **Login UI default credentials hint removed**
+- **Dashboard revenue bug fixed (removed dead count variable)**
+- **Schema mismatch fixed (added history fields to ParkingRecordResponse)**
+- **PaymentPanel wired to POST /payments API**
+- **Duplicate JSON helpers extracted to shared JsonHelper.java**
+- **Phase 5: All 27 API endpoint tests passed (login, vehicles, slots, parking entry/exit, payments, dashboard, history)**
+- **Phase 5: 58 unit tests added and passing (fee_service, parking_service, schema validation)**
+- **Phase 5: Java frontend compiles successfully (38 .class files)**
+- **Phase 5: run.bat quoting bug fixed (line 142 — nested double quotes broke with spaces in path)**
 
 ## Current Work
 
-All phases completed. Project is ready for testing.
+All 5 phases complete. Project is fully functional and tested.
 
 ## Pending Work
 
-None - all phases complete.
+- PaymentPanel not wired into DashboardFrame CardLayout (by design — exit flow handles payment inline)
 
 ## Frontend Integration Status
 
-All UI panels now use real API calls instead of placeholder data.
+All UI panels use real API calls instead of placeholder data.
 
 | Screen | API Endpoint | Integration Status |
 |--------|-------------|-------------------|
@@ -225,15 +261,17 @@ All UI panels now use real API calls instead of placeholder data.
 | Slots | GET /slots, POST /slots, GET /slots/available | Integrated |
 | Entry | POST /parking/entry, GET /slots/available, GET /vehicles/search/{number} | Integrated |
 | Exit | POST /parking/exit, GET /parking/active, GET /vehicles/search/{number} | Integrated |
-| Payments | POST /payments | Integrated |
+| Payments | POST /payments | Integrated (via PaymentPanel, not in nav) |
 | History | GET /parking/history | Integrated |
 
 ## Important Decisions
 
 - Using Architecture.md structures over PRD.md where conflicts exist (more complete)
 - Backend uses `schemas/` folder for Pydantic models (standard FastAPI practice)
-- Frontend uses placeholder data until backend APIs are ready
 - ParkingExitPanel handles both exit and payment in one flow (per Design.md)
+- PaymentPanel exists as standalone component but is not in DashboardFrame navigation
+- JsonHelper.java provides shared JSON parsing — no external JSON library used
+- History API response uses `duration_minutes`/`payment_status`/`payment_method` field names (matching service layer), schema updated to accept them
 
 ## Login UI Fix (2026-08-28)
 
@@ -249,7 +287,7 @@ All UI panels now use real API calls instead of placeholder data.
 
 ## Known Issues
 
-- Deprecation warning in ApiService.java (non-critical, Java HttpURLConnection)
+- Deprecation warning in ApiService.java (non-critical, Java HttpURLConnection uses deprecated API)
 
 ## Launcher (run.bat)
 
@@ -313,39 +351,80 @@ All schemas use strict Pydantic v2 validation:
 
 Rejected inputs return 422 Unprocessable Entity with detailed error messages.
 
-## Changes This Session (2026-08-29)
+## Session History
 
-### Login UI
-- Removed default credentials hint text from LoginFrame.java
-- Recompiled Java (37 .class files)
+### 2026-08-28 — Initial Setup & All Phases
 
-### Database Auto-Seeding
-- **Problem:** Tables were empty because `schema.sql` was never executed
-- **Fix:** Added `seed_data()` to `main.py` that auto-creates users and slots on startup if empty
-- **Users seeded:** admin/admin123, staff/staff123, om/om
-- **Slots seeded:** 20 slots (10 CAR A1-A10, 10 BIKE B1-B10)
+- Project structure created
+- Documentation copied to `docs/`
+- MySQL `parking_db` database created
+- `.env` file created with correct credentials
+- `database.py` updated to load from `.env`
+- Python dependencies installed
+- MySQL connection verified OK
+- All 5 SQLAlchemy models created with relationships
+- All 5 Pydantic schemas created with validation
+- All 6 route files implemented (auth, vehicles, slots, parking, payments, dashboard)
+- All 3 service files implemented (auth_service, fee_service, parking_service)
+- All 16 Java UI files implemented and compiled
+- CORS middleware added to main.py
+- Frontend-backend integration completed
+- All placeholder data replaced with real API calls
+- Password hashing (PBKDF2-SHA256) implemented
+- Input validation on all schemas
+- Error handling on all routes
+- run.bat launcher created
+- Auto-seeding in main.py (users + slots on startup)
+- User om/om created for general access
+- Login UI default credentials hint removed
+- Login UI fix: dynamic frame sizing, GridBagLayout centering, resizable
 
-### New User
-- Created user `om` with password `om` and role `STAFF`
+### 2026-08-29 — Phase 4 Bug Fixes & Quality Improvements
 
-### Validation Fix
-- Relaxed `UserLogin` schema: username min 3→2, password min 4→2
-- Reason: short credentials like `om/om` were rejected with 422 error
+**Bug Fixes:**
+- **Dashboard revenue:** Removed dead `today_revenue` count variable in `parking_service.py` — was querying payment count (unused) alongside the actual amount sum
+- **Schema mismatch:** Added `vehicle_type`, `duration_minutes`, `payment_status`, `payment_method` fields to `ParkingRecordResponse` schema — `get_parking_history()` was returning these fields but the schema rejected them
 
-### Security
-- pip-audit: No known vulnerabilities found
-- `database.py`: Removed hardcoded fallback password, now requires .env
-- `schema.sql`: Replaced plaintext passwords with PBKDF2-SHA256 hashed passwords
-- `.env` already in `.gitignore` (verified)
-- Created `services/auth_service.py` with PBKDF2-SHA256 hashing (100k iterations + salt)
-- Auth route now verifies hashed passwords instead of plaintext comparison
+**PaymentPanel Integration:**
+- **Problem:** `PaymentPanel.java` had a `TODO` comment — payment POST was never sent to backend
+- **Fix:** Added `currentRecordId` field, wired `apiService.createPayment()` call, added loading state and error handling
+- **Note:** PaymentPanel is not currently wired into DashboardFrame's CardLayout (exit flow handles payment inline via ParkingExitPanel)
 
-### Error Handling
-- All 6 route files wrapped in try/except blocks
-- Errors logged server-side with `logging` module
-- Users see generic messages: "An error occurred while..."
-- No stack traces, file paths, or database errors exposed to frontend
+**JSON Helper Refactoring:**
+- **Problem:** `extractField()`, `extractJsonInt()`, `extractJsonDouble()`, `extractMessage()`, `formatDateTime()`, `formatDuration()` were copy-pasted across 6 panel classes
+- **Fix:** Created `service/JsonHelper.java` with all shared static methods
+- Updated all panels (VehiclePanel, SlotPanel, ParkingEntryPanel, ParkingExitPanel, HistoryPanel, DashboardPanel, PaymentPanel) to use `JsonHelper`
+- Removed all local duplicate methods from each panel
+
+**Compilation:**
+- All 17 Java files compile successfully (38 .class files)
+- All Python imports pass
+- ParkingRecordResponse schema validates with new fields
+
+### 2026-08-29 — Phase 5: Final QA, Testing & Project Completion
+
+**API Endpoint Testing (27 tests):**
+- Login: valid admin, valid staff, wrong password, nonexistent user — all correct
+- Vehicles: create CAR, create BIKE, duplicate rejection, get all, search, search not found — all correct
+- Slots: get all (20 seeded), get available, create new slot, duplicate slot rejection — all correct
+- Parking: park vehicle, reject already parked, reject type mismatch, exit with CASH, reject double exit, reject nonexistent record — all correct
+- Payments: get payment history — correct
+- Dashboard: stats with total_slots, available_slots, occupied_slots, active_vehicles, today_revenue — all correct
+- BIKE flow: park BIKE in B1, exit with UPI — correct
+
+**Unit Tests (58 tests, all passing):**
+- `test_fee_service.py` (19 tests): CAR/BIKE fee calculation, edge cases (0 min, negative, invalid type, case insensitive)
+- `test_parking_service.py` (11 tests): park_vehicle success/already parked/occupied/type mismatch/not found, exit_vehicle success/already completed/not found/payment creation, dashboard stats
+- `test_schemas.py` (28 tests): VehicleCreate, SlotCreate, ParkingEntry, ParkingExit, PaymentCreate — valid inputs, invalid types, boundary values, pattern matching
+
+**Bug Fix:**
+- **run.bat line 142:** Fixed nested double quotes in `start cmd /c "java -cp "%JAVA_BUILD%" Main"` — path with spaces broke the command. Changed to `java -cp "%JAVA_BUILD%" Main` (no outer quotes).
+
+**Compilation:**
+- All 17 Java files compile successfully (38 .class files)
+- All 58 Python unit tests pass
+- All API endpoint tests pass
 
 ## Last Updated
 
-2026-08-29 — Phase 4 completed. Frontend-backend integration done. run.bat launcher created. Auto-seeding added to main.py. User om/om created. Relaxed login validation (min 2 chars).
+2026-08-29 — Phase 5 complete. All 27 API endpoint tests passed. 58 unit tests added and passing. Java frontend compiles (38 .class files). Fixed run.bat quoting bug. Project fully tested and complete.

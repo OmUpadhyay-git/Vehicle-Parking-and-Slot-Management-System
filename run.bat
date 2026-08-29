@@ -139,7 +139,7 @@ echo.
 :: ============================================
 echo [7/7] Starting Java frontend...
 cd /d "%FRONTEND_DIR%"
-start "Parking System Frontend" cmd /c "java -cp "%JAVA_BUILD%" Main"
+start "Parking System Frontend" cmd /c java -cp "%JAVA_BUILD%" Main
 
 echo.
 echo ============================================

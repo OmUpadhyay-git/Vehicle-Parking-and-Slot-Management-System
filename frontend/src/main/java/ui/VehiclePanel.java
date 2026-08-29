@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 import service.ApiService;
+import service.JsonHelper;
 
 public class VehiclePanel extends JPanel {
 
@@ -149,10 +150,10 @@ public class VehiclePanel extends JPanel {
                 if (objEnd == -1) break;
 
                 String obj = arrContent.substring(objStart, objEnd + 1);
-                String vNum = extractField(obj, "vehicle_number");
-                String vType = extractField(obj, "vehicle_type");
-                String owner = extractField(obj, "owner_name");
-                String phone = extractField(obj, "owner_phone");
+                String vNum = JsonHelper.extractField(obj, "vehicle_number");
+                String vType = JsonHelper.extractField(obj, "vehicle_type");
+                String owner = JsonHelper.extractField(obj, "owner_name");
+                String phone = JsonHelper.extractField(obj, "owner_phone");
 
                 tableModel.addRow(new Object[]{vNum, vType, owner, phone});
                 i = objEnd + 1;
@@ -160,16 +161,6 @@ public class VehiclePanel extends JPanel {
         } catch (Exception e) {
             // Keep empty table
         }
-    }
-
-    private String extractField(String json, String key) {
-        String searchKey = "\"" + key + "\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
     }
 
     private void showAddVehicleDialog() {
@@ -255,7 +246,7 @@ public class VehiclePanel extends JPanel {
                         JOptionPane.showMessageDialog(this, "Vehicle added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
                         loadVehicles();
                     } else {
-                        String message = extractMessage(response);
+                        String message = JsonHelper.extractMessage(response);
                         errorLabel.setText(message.isEmpty() ? "Failed to add vehicle" : message);
                         saveBtn.setEnabled(true);
                         saveBtn.setText("SAVE");
@@ -266,15 +257,5 @@ public class VehiclePanel extends JPanel {
 
         dialog.add(panel);
         dialog.setVisible(true);
-    }
-
-    private String extractMessage(String json) {
-        String searchKey = "\"message\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
     }
 }

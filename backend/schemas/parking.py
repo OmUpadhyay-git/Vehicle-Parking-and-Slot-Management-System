@@ -33,6 +33,10 @@ class ParkingRecordResponse(BaseModel):
     status: str
     vehicle_number: Optional[str] = None
     slot_number: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    payment_status: Optional[str] = None
+    payment_method: Optional[str] = None
 
     class Config:
         from_attributes = True

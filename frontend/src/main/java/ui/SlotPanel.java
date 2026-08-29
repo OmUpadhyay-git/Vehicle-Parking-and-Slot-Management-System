@@ -9,6 +9,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 import service.ApiService;
+import service.JsonHelper;
 
 public class SlotPanel extends JPanel {
 
@@ -141,9 +142,9 @@ public class SlotPanel extends JPanel {
                 if (objEnd == -1) break;
 
                 String obj = arrContent.substring(objStart, objEnd + 1);
-                String slotNum = extractField(obj, "slot_number");
-                String vType = extractField(obj, "vehicle_type");
-                String status = extractField(obj, "status");
+                String slotNum = JsonHelper.extractField(obj, "slot_number");
+                String vType = JsonHelper.extractField(obj, "vehicle_type");
+                String status = JsonHelper.extractField(obj, "status");
 
                 allSlots.add(new String[]{slotNum, vType, status});
                 tableModel.addRow(new Object[]{slotNum, vType, status});
@@ -153,16 +154,6 @@ public class SlotPanel extends JPanel {
         } catch (Exception e) {
             // Keep empty table
         }
-    }
-
-    private String extractField(String json, String key) {
-        String searchKey = "\"" + key + "\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
     }
 
     private void buildGrid() {
@@ -322,7 +313,7 @@ public class SlotPanel extends JPanel {
                         JOptionPane.showMessageDialog(this, "Slot added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
                         loadSlots();
                     } else {
-                        String message = extractMessage(response);
+                        String message = JsonHelper.extractMessage(response);
                         errorLabel.setText(message.isEmpty() ? "Failed to add slot" : message);
                         saveBtn.setEnabled(true);
                         saveBtn.setText("SAVE");
@@ -333,15 +324,5 @@ public class SlotPanel extends JPanel {
 
         dialog.add(panel);
         dialog.setVisible(true);
-    }
-
-    private String extractMessage(String json) {
-        String searchKey = "\"message\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
     }
 }

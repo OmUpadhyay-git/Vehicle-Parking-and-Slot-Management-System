@@ -170,11 +170,6 @@ def get_dashboard_stats(db: Session):
     active_vehicles = db.query(ParkingRecord).filter(ParkingRecord.status == "PARKED").count()
 
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_revenue = (
-        db.query(Payment)
-        .filter(Payment.status == "PAID", Payment.payment_time >= today_start)
-        .count()
-    )
 
     today_revenue_amount = 0.0
     today_payments = (

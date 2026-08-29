@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import javax.swing.*;
 
 import service.ApiService;
+import service.JsonHelper;
 
 public class ParkingEntryPanel extends JPanel {
 
@@ -157,7 +158,7 @@ public class ParkingEntryPanel extends JPanel {
                                 int objStart = arrContent.indexOf("{");
                                 int objEnd = arrContent.indexOf("}", objStart);
                                 String obj = arrContent.substring(objStart, objEnd + 1);
-                                String vType = extractField(obj, "vehicle_type");
+                                String vType = JsonHelper.extractField(obj, "vehicle_type");
                                 vehicleTypeLabel.setText(vType);
                                 statusLabel.setForeground(new Color(46, 204, 113));
                                 statusLabel.setText("Vehicle found.");
@@ -211,9 +212,9 @@ public class ParkingEntryPanel extends JPanel {
                         if (objEnd == -1) break;
 
                         String obj = arrContent.substring(objStart, objEnd + 1);
-                        String slotNum = extractField(obj, "slot_number");
-                        String slotType = extractField(obj, "vehicle_type");
-                        int slotId = extractJsonInt(obj, "slot_id");
+                        String slotNum = JsonHelper.extractField(obj, "slot_number");
+                        String slotType = JsonHelper.extractField(obj, "vehicle_type");
+                        int slotId = JsonHelper.extractJsonInt(obj, "slot_id");
 
                         if (slotType.equalsIgnoreCase(vehicleType)) {
                             availableSlots.add(new String[]{slotNum, slotType, String.valueOf(slotId)});
@@ -249,9 +250,9 @@ public class ParkingEntryPanel extends JPanel {
                 if (objEnd == -1) break;
 
                 String obj = arrContent.substring(objStart, objEnd + 1);
-                String slotNum = extractField(obj, "slot_number");
-                String slotType = extractField(obj, "vehicle_type");
-                int slotId = extractJsonInt(obj, "slot_id");
+                String slotNum = JsonHelper.extractField(obj, "slot_number");
+                String slotType = JsonHelper.extractField(obj, "vehicle_type");
+                int slotId = JsonHelper.extractJsonInt(obj, "slot_id");
 
                 availableSlots.add(new String[]{slotNum, slotType, String.valueOf(slotId)});
                 slotCombo.addItem(slotNum + " - " + slotType);
@@ -309,7 +310,7 @@ public class ParkingEntryPanel extends JPanel {
                             vehicleTypeLabel.setText("-");
                             loadAvailableSlots();
                         } else {
-                            String message = extractMessage(response);
+                            String message = JsonHelper.extractMessage(response);
                             statusLabel.setForeground(Color.RED);
                             statusLabel.setText(message.isEmpty() ? "Failed to park vehicle" : message);
                         }
@@ -322,41 +323,5 @@ public class ParkingEntryPanel extends JPanel {
                 });
             }).start();
         }
-    }
-
-    private String extractField(String json, String key) {
-        String searchKey = "\"" + key + "\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
-    }
-
-    private int extractJsonInt(String json, String key) {
-        String searchKey = "\"" + key + "\":";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return -1;
-        startIndex += searchKey.length();
-        int endIndex = startIndex;
-        while (endIndex < json.length() && Character.isDigit(json.charAt(endIndex))) {
-            endIndex++;
-        }
-        try {
-            return Integer.parseInt(json.substring(startIndex, endIndex));
-        } catch (NumberFormatException e) {
-            return -1;
-        }
-    }
-
-    private String extractMessage(String json) {
-        String searchKey = "\"message\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
     }
 }

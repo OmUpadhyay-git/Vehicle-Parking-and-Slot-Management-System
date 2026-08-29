@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import javax.swing.*;
 
 import service.ApiService;
+import service.JsonHelper;
 
 public class ParkingExitPanel extends JPanel {
 
@@ -213,19 +214,19 @@ public class ParkingExitPanel extends JPanel {
                         if (objEnd == -1) break;
 
                         String obj = arrContent.substring(objStart, objEnd + 1);
-                        String vNum = extractField(obj, "vehicle_number");
+                        String vNum = JsonHelper.extractField(obj, "vehicle_number");
 
                         if (vNum.equalsIgnoreCase(number)) {
-                            int recordId = extractJsonInt(obj, "record_id");
-                            String vType = extractField(obj, "vehicle_type");
-                            String slotNum = extractField(obj, "slot_number");
-                            String entryTime = extractField(obj, "entry_time");
+                            int recordId = JsonHelper.extractJsonInt(obj, "record_id");
+                            String vType = JsonHelper.extractField(obj, "vehicle_type");
+                            String slotNum = JsonHelper.extractField(obj, "slot_number");
+                            String entryTime = JsonHelper.extractField(obj, "entry_time");
 
                             currentRecordId = recordId;
 
                             vehicleTypeValue.setText(vType);
                             slotValue.setText(slotNum);
-                            entryTimeValue.setText(formatDateTime(entryTime));
+                            entryTimeValue.setText(JsonHelper.formatDateTime(entryTime));
                             exitTimeValue.setText("Now");
                             durationValue.setText("Calculating...");
                             feeValue.setText("Calculating...");
@@ -290,19 +291,6 @@ public class ParkingExitPanel extends JPanel {
         }
     }
 
-    private String formatDateTime(String isoDateTime) {
-        try {
-            if (isoDateTime.length() >= 16) {
-                String date = isoDateTime.substring(0, 10);
-                String time = isoDateTime.substring(11, 16);
-                return date + " " + time;
-            }
-            return isoDateTime;
-        } catch (Exception e) {
-            return isoDateTime;
-        }
-    }
-
     private void resetForm() {
         vehicleTypeValue.setText("-");
         slotValue.setText("-");
@@ -346,7 +334,7 @@ public class ParkingExitPanel extends JPanel {
                             resetForm();
                             vehicleNumberField.setText("");
                         } else {
-                            String message = extractMessage(response);
+                            String message = JsonHelper.extractMessage(response);
                             statusLabel.setForeground(Color.RED);
                             statusLabel.setText(message.isEmpty() ? "Failed to process exit" : message);
                             exitBtn.setEnabled(true);
@@ -359,41 +347,5 @@ public class ParkingExitPanel extends JPanel {
                 });
             }).start();
         }
-    }
-
-    private String extractField(String json, String key) {
-        String searchKey = "\"" + key + "\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
-    }
-
-    private int extractJsonInt(String json, String key) {
-        String searchKey = "\"" + key + "\":";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return -1;
-        startIndex += searchKey.length();
-        int endIndex = startIndex;
-        while (endIndex < json.length() && Character.isDigit(json.charAt(endIndex))) {
-            endIndex++;
-        }
-        try {
-            return Integer.parseInt(json.substring(startIndex, endIndex));
-        } catch (NumberFormatException e) {
-            return -1;
-        }
-    }
-
-    private String extractMessage(String json) {
-        String searchKey = "\"message\":\"";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return "";
-        startIndex += searchKey.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "";
-        return json.substring(startIndex, endIndex);
     }
 }

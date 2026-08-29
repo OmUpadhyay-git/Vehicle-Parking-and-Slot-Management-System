@@ -4,6 +4,7 @@ import java.awt.*;
 import javax.swing.*;
 
 import service.ApiService;
+import service.JsonHelper;
 
 public class DashboardPanel extends JPanel {
 
@@ -93,11 +94,11 @@ public class DashboardPanel extends JPanel {
             SwingUtilities.invokeLater(() -> {
                 try {
                     if (response.contains("\"success\":true")) {
-                        int totalSlots = extractJsonInt(response, "total_slots");
-                        int availableSlots = extractJsonInt(response, "available_slots");
-                        int occupiedSlots = extractJsonInt(response, "occupied_slots");
-                        int activeVehicles = extractJsonInt(response, "active_vehicles");
-                        double todayRevenue = extractJsonDouble(response, "today_revenue");
+                        int totalSlots = JsonHelper.extractJsonInt(response, "total_slots");
+                        int availableSlots = JsonHelper.extractJsonInt(response, "available_slots");
+                        int occupiedSlots = JsonHelper.extractJsonInt(response, "occupied_slots");
+                        int activeVehicles = JsonHelper.extractJsonInt(response, "active_vehicles");
+                        double todayRevenue = JsonHelper.extractJsonDouble(response, "today_revenue");
 
                         totalSlotsValue.setText(String.valueOf(totalSlots));
                         availableSlotsValue.setText(String.valueOf(availableSlots));
@@ -110,38 +111,6 @@ public class DashboardPanel extends JPanel {
                 }
             });
         }).start();
-    }
-
-    private int extractJsonInt(String json, String key) {
-        String searchKey = "\"" + key + "\":";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return 0;
-        startIndex += searchKey.length();
-        int endIndex = startIndex;
-        while (endIndex < json.length() && (Character.isDigit(json.charAt(endIndex)) || json.charAt(endIndex) == '-')) {
-            endIndex++;
-        }
-        try {
-            return Integer.parseInt(json.substring(startIndex, endIndex));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    private double extractJsonDouble(String json, String key) {
-        String searchKey = "\"" + key + "\":";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return 0.0;
-        startIndex += searchKey.length();
-        int endIndex = startIndex;
-        while (endIndex < json.length() && (Character.isDigit(json.charAt(endIndex)) || json.charAt(endIndex) == '.' || json.charAt(endIndex) == '-')) {
-            endIndex++;
-        }
-        try {
-            return Double.parseDouble(json.substring(startIndex, endIndex));
-        } catch (NumberFormatException e) {
-            return 0.0;
-        }
     }
 
     public void refreshData() {

@@ -6,6 +6,9 @@ import java.awt.event.ActionListener;
 
 import javax.swing.*;
 
+import service.ApiService;
+import service.JsonHelper;
+
 public class PaymentPanel extends JPanel {
 
     private JLabel vehicleNumberValue;
@@ -14,8 +17,12 @@ public class PaymentPanel extends JPanel {
     private JComboBox<String> paymentMethodCombo;
     private JButton payBtn;
     private JLabel statusLabel;
+    private ApiService apiService;
+    private int currentRecordId = -1;
+    private double currentFee = 0;
 
     public PaymentPanel() {
+        apiService = new ApiService();
         initUI();
     }
 
@@ -102,7 +109,9 @@ public class PaymentPanel extends JPanel {
         });
     }
 
-    public void setPaymentInfo(String vehicleNumber, String slot, double fee) {
+    public void setPaymentInfo(int recordId, String vehicleNumber, String slot, double fee) {
+        this.currentRecordId = recordId;
+        this.currentFee = fee;
         vehicleNumberValue.setText(vehicleNumber);
         slotValue.setText(slot);
         feeValue.setText("Rs. " + String.format("%.0f", fee));
@@ -119,19 +128,47 @@ public class PaymentPanel extends JPanel {
             return;
         }
 
+        if (currentRecordId == -1) {
+            statusLabel.setForeground(Color.RED);
+            statusLabel.setText("No parking record found.");
+            return;
+        }
+
         int confirm = JOptionPane.showConfirmDialog(this,
                 "Confirm Payment\n\nVehicle: " + vehicle + "\nAmount: " + fee + "\nMethod: " + method,
                 "Confirm Payment",
                 JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            // TODO: POST /payments via API
-            statusLabel.setForeground(new Color(46, 204, 113));
-            statusLabel.setText("Payment successful. Vehicle exit completed.");
-            JOptionPane.showMessageDialog(this,
-                    "Payment Successful\nVehicle Exit Completed\nSlot is now Available",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
+            payBtn.setEnabled(false);
+            statusLabel.setForeground(Color.GRAY);
+            statusLabel.setText("Processing payment...");
+
+            String paymentMethod = method.toUpperCase();
+            new Thread(() -> {
+                String response = apiService.createPayment(currentRecordId, currentFee, paymentMethod);
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        if (response.contains("\"success\":true")) {
+                            statusLabel.setForeground(new Color(46, 204, 113));
+                            statusLabel.setText("Payment successful. Vehicle exit completed.");
+                            JOptionPane.showMessageDialog(this,
+                                    "Payment Successful\nVehicle Exit Completed\nSlot is now Available",
+                                    "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            String message = JsonHelper.extractMessage(response);
+                            statusLabel.setForeground(Color.RED);
+                            statusLabel.setText(message.isEmpty() ? "Payment failed" : message);
+                        }
+                    } catch (Exception e) {
+                        statusLabel.setForeground(Color.RED);
+                        statusLabel.setText("Error processing payment.");
+                    } finally {
+                        payBtn.setEnabled(true);
+                    }
+                });
+            }).start();
         }
     }
 }
