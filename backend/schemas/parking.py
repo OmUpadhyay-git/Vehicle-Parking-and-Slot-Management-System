@@ -7,6 +7,9 @@ import re
 class ParkingEntry(BaseModel):
     vehicle_number: str = Field(..., min_length=5, max_length=20)
     slot_id: int = Field(..., gt=0)
+    vehicle_type: Optional[str] = Field(None, pattern=r"^(CAR|BIKE)$")
+    owner_name: Optional[str] = Field(None, max_length=100)
+    owner_phone: Optional[str] = Field(None, max_length=15)
 
     @field_validator("vehicle_number")
     @classmethod

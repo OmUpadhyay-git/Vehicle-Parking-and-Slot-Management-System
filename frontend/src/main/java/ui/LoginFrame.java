@@ -145,9 +145,9 @@ public class LoginFrame extends JFrame {
         JPanel formPanel = new JPanel();
         formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBackground(Color.WHITE);
-        formPanel.setPreferredSize(new Dimension(320, 420));
-        formPanel.setMinimumSize(new Dimension(300, 420));
-        formPanel.setMaximumSize(new Dimension(340, 420));
+        formPanel.setPreferredSize(new Dimension(320, 460));
+        formPanel.setMinimumSize(new Dimension(300, 460));
+        formPanel.setMaximumSize(new Dimension(340, 460));
 
         // Welcome text
         JLabel welcomeLabel = new JLabel("Welcome Back");
@@ -279,6 +279,35 @@ public class LoginFrame extends JFrame {
         loginButton.setFocusPainted(false);
         loginButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         formPanel.add(loginButton);
+
+        formPanel.add(Box.createVerticalStrut(12));
+
+        // Forgot Password link
+        JLabel forgotPasswordLabel = new JLabel("Forgot Password?");
+        forgotPasswordLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        forgotPasswordLabel.setForeground(ACCENT);
+        forgotPasswordLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        forgotPasswordLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        forgotPasswordLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                JOptionPane.showMessageDialog(LoginFrame.this,
+                        "Please contact your administrator to reset your password.",
+                        "Forgot Password",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                forgotPasswordLabel.setText("<html><u>Forgot Password?</u></html>");
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                forgotPasswordLabel.setText("Forgot Password?");
+            }
+        });
+        formPanel.add(forgotPasswordLabel);
 
         // Center form in the right panel
         GridBagConstraints gbc = new GridBagConstraints();

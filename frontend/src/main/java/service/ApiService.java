@@ -51,6 +51,10 @@ public class ApiService {
         return sendRequest("GET", "/vehicles/search/" + vehicleNumber, null);
     }
 
+    public String deleteVehicle(int vehicleId) {
+        return sendRequest("DELETE", "/vehicles/" + vehicleId, null);
+    }
+
     // ============ SLOTS ============
 
     public String createSlot(String slotNumber, String vehicleType) {
@@ -81,6 +85,15 @@ public class ApiService {
     public String parkVehicle(String vehicleNumber, int slotId) {
         String json = "{\"vehicle_number\":\"" + escapeJson(vehicleNumber)
                 + "\",\"slot_id\":" + slotId + "}";
+        return sendRequest("POST", "/parking/entry", json);
+    }
+
+    public String parkVehicleDirect(String vehicleNumber, int slotId, String vehicleType, String ownerName, String ownerPhone) {
+        String json = "{\"vehicle_number\":\"" + escapeJson(vehicleNumber)
+                + "\",\"slot_id\":" + slotId
+                + ",\"vehicle_type\":\"" + escapeJson(vehicleType != null ? vehicleType : "")
+                + "\",\"owner_name\":\"" + escapeJson(ownerName != null ? ownerName : "")
+                + "\",\"owner_phone\":\"" + escapeJson(ownerPhone != null ? ownerPhone : "") + "\"}";
         return sendRequest("POST", "/parking/entry", json);
     }
 
@@ -121,6 +134,29 @@ public class ApiService {
         return sendRequest("GET", "/dashboard", null);
     }
 
+    // ============ USERS / STAFF ============
+
+    public String getUsers() {
+        return sendRequest("GET", "/users", null);
+    }
+
+    public String createUser(String name, String username, String password, String role) {
+        String json = "{\"name\":\"" + escapeJson(name)
+                + "\",\"username\":\"" + escapeJson(username)
+                + "\",\"password\":\"" + escapeJson(password)
+                + "\",\"role\":\"" + escapeJson(role) + "\"}";
+        return sendRequest("POST", "/users", json);
+    }
+
+    public String changePassword(int userId, String newPassword) {
+        String json = "{\"new_password\":\"" + escapeJson(newPassword) + "\"}";
+        return sendRequest("PUT", "/users/" + userId + "/password", json);
+    }
+
+    public String deleteUser(int userId) {
+        return sendRequest("DELETE", "/users/" + userId, null);
+    }
+
     // ============ HTTP HELPER ============
 
     private String sendRequest(String method, String endpoint, String jsonBody) {
@@ -132,11 +168,12 @@ public class ApiService {
             conn.setRequestProperty("Accept", "application/json");
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
-            conn.setDoOutput(true);
 
             if (jsonBody != null && !jsonBody.isEmpty()) {
+                conn.setDoOutput(true);
+                byte[] input = jsonBody.getBytes(StandardCharsets.UTF_8);
+                conn.setRequestProperty("Content-Length", String.valueOf(input.length));
                 try (OutputStream os = conn.getOutputStream()) {
-                    byte[] input = jsonBody.getBytes(StandardCharsets.UTF_8);
                     os.write(input, 0, input.length);
                 }
             }

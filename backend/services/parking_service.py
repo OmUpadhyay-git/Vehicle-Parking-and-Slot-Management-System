@@ -8,12 +8,23 @@ from models.payment import Payment
 from services.fee_service import calculate_fee
 
 
-def park_vehicle(db: Session, vehicle_number: str, slot_id: int):
+def park_vehicle(db: Session, vehicle_number: str, slot_id: int,
+                 vehicle_type: str = None, owner_name: str = None, owner_phone: str = None):
     vehicle_number = vehicle_number.upper().strip()
 
     vehicle = db.query(Vehicle).filter(Vehicle.vehicle_number == vehicle_number).first()
     if not vehicle:
-        return {"success": False, "message": "Vehicle not found"}
+        if not vehicle_type or not owner_name or not owner_phone:
+            return {"success": False, "message": "Vehicle not found. Please provide vehicle_type, owner_name, and owner_phone to register."}
+        vehicle = Vehicle(
+            vehicle_number=vehicle_number,
+            vehicle_type=vehicle_type.upper().strip(),
+            owner_name=owner_name.strip(),
+            owner_phone=owner_phone.strip(),
+        )
+        db.add(vehicle)
+        db.commit()
+        db.refresh(vehicle)
 
     active_record = (
         db.query(ParkingRecord)
@@ -149,6 +160,9 @@ def get_parking_history(db: Session):
         payment = db.query(Payment).filter(Payment.record_id == record.record_id).first()
         result.append({
             "record_id": record.record_id,
+            "vehicle_id": record.vehicle_id,
+            "slot_id": record.slot_id,
+            "status": record.status,
             "vehicle_number": vehicle.vehicle_number if vehicle else "",
             "vehicle_type": vehicle.vehicle_type if vehicle else "",
             "slot_number": slot.slot_number if slot else "",

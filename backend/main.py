@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
-from routes import auth, vehicles, slots, parking, payments, dashboard
+from routes import auth, vehicles, slots, parking, payments, dashboard, users
 from models.user import User
 from models.slot import ParkingSlot
 from services.auth_service import hash_password
@@ -64,6 +64,7 @@ app.include_router(slots.router)
 app.include_router(parking.router)
 app.include_router(payments.router)
 app.include_router(dashboard.router)
+app.include_router(users.router)
 
 
 @app.get("/")

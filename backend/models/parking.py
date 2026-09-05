@@ -8,8 +8,8 @@ class ParkingRecord(Base):
     __tablename__ = "parking_records"
 
     record_id = Column(Integer, primary_key=True, index=True)
-    vehicle_id = Column(Integer, ForeignKey("vehicles.vehicle_id"), nullable=False)
-    slot_id = Column(Integer, ForeignKey("parking_slots.slot_id"), nullable=False)
+    vehicle_id = Column(Integer, ForeignKey("vehicles.vehicle_id", ondelete="CASCADE"), nullable=False)
+    slot_id = Column(Integer, ForeignKey("parking_slots.slot_id", ondelete="CASCADE"), nullable=False)
     entry_time = Column(DateTime, nullable=False)
     exit_time = Column(DateTime, nullable=True)
     duration = Column(Integer, nullable=True)

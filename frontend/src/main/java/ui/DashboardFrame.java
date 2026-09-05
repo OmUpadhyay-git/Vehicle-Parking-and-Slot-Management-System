@@ -18,11 +18,12 @@ public class DashboardFrame extends JFrame {
     private JButton vehicleBtn;
     private JButton slotBtn;
     private JButton entryBtn;
-    private JButton exitBtn;
     private JButton historyBtn;
+    private JButton staffBtn;
     private JButton logoutBtn;
 
     private JButton activeButton;
+    private DashboardPanel dashboardPanel;
 
     public DashboardFrame(String role, String username) {
         this.currentRole = role;
@@ -46,12 +47,13 @@ public class DashboardFrame extends JFrame {
         cardLayout = new CardLayout();
         contentPanel.setLayout(cardLayout);
 
-        contentPanel.add(new DashboardPanel(), "DASHBOARD");
-        contentPanel.add(new VehiclePanel(), "VEHICLES");
+        dashboardPanel = new DashboardPanel();
+        contentPanel.add(dashboardPanel, "DASHBOARD");
+        contentPanel.add(new VehiclePanel(currentRole), "VEHICLES");
         contentPanel.add(new SlotPanel(), "SLOTS");
         contentPanel.add(new ParkingEntryPanel(), "ENTRY");
-        contentPanel.add(new ParkingExitPanel(), "EXIT");
         contentPanel.add(new HistoryPanel(), "HISTORY");
+        contentPanel.add(new StaffManagementPanel(), "STAFF");
 
         mainPanel.add(contentPanel, BorderLayout.CENTER);
 
@@ -88,8 +90,8 @@ public class DashboardFrame extends JFrame {
         vehicleBtn = createSidebarButton("Vehicles");
         slotBtn = createSidebarButton("Parking Slots");
         entryBtn = createSidebarButton("Vehicle Entry");
-        exitBtn = createSidebarButton("Vehicle Exit");
         historyBtn = createSidebarButton("Parking History");
+        staffBtn = createSidebarButton("Staff Management");
 
         sidebar.add(dashboardBtn);
         sidebar.add(Box.createVerticalStrut(5));
@@ -103,9 +105,12 @@ public class DashboardFrame extends JFrame {
 
         sidebar.add(entryBtn);
         sidebar.add(Box.createVerticalStrut(5));
-        sidebar.add(exitBtn);
-        sidebar.add(Box.createVerticalStrut(5));
         sidebar.add(historyBtn);
+
+        if ("ADMIN".equalsIgnoreCase(currentRole)) {
+            sidebar.add(Box.createVerticalStrut(5));
+            sidebar.add(staffBtn);
+        }
 
         sidebar.add(Box.createVerticalGlue());
 
@@ -175,11 +180,11 @@ public class DashboardFrame extends JFrame {
                     case "Vehicle Entry":
                         cardLayout.show(contentPanel, "ENTRY");
                         break;
-                    case "Vehicle Exit":
-                        cardLayout.show(contentPanel, "EXIT");
-                        break;
                     case "Parking History":
                         cardLayout.show(contentPanel, "HISTORY");
+                        break;
+                    case "Staff Management":
+                        cardLayout.show(contentPanel, "STAFF");
                         break;
                 }
             }
@@ -201,5 +206,11 @@ public class DashboardFrame extends JFrame {
         sep.setMaximumSize(new Dimension(180, 1));
         sep.setForeground(new Color(52, 73, 94));
         return sep;
+    }
+
+    public void refreshDashboard() {
+        if (dashboardPanel != null) {
+            dashboardPanel.refreshData();
+        }
     }
 }

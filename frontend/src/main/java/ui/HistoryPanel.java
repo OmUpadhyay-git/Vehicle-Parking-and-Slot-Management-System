@@ -28,11 +28,29 @@ public class HistoryPanel extends JPanel {
         setBackground(Color.WHITE);
 
         // Top bar
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(new Color(236, 240, 241));
         JLabel titleLabel = new JLabel("  Parking History");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        topBar.add(titleLabel);
+        topBar.add(titleLabel, BorderLayout.WEST);
+
+        JButton refreshBtn = new JButton("Refresh");
+        refreshBtn.setFont(new Font("SansSerif", Font.BOLD, 11));
+        refreshBtn.setForeground(Color.WHITE);
+        refreshBtn.setBackground(new Color(52, 152, 219));
+        refreshBtn.setBorderPainted(false);
+        refreshBtn.setFocusPainted(false);
+        refreshBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        refreshBtn.addActionListener(e -> {
+            searchField.setText("");
+            loadHistory();
+        });
+
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        rightPanel.add(refreshBtn);
+        topBar.add(rightPanel, BorderLayout.EAST);
+
         add(topBar, BorderLayout.NORTH);
 
         // Toolbar
@@ -50,6 +68,9 @@ public class HistoryPanel extends JPanel {
         searchBtn.setBackground(new Color(52, 152, 219));
         searchBtn.setForeground(Color.WHITE);
         searchBtn.setFocusPainted(false);
+        searchBtn.setOpaque(true);
+        searchBtn.setContentAreaFilled(true);
+        searchBtn.setBorderPainted(false);
         toolbar.add(searchBtn);
 
         add(toolbar, BorderLayout.CENTER);

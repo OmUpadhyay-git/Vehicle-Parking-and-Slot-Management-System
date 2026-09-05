@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -18,6 +19,9 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
 
         if not user or not verify_password(credentials.password, user.password):
             return LoginResponse(success=False, message="Invalid username or password")
+
+        user.last_login = datetime.now()
+        db.commit()
 
         return LoginResponse(
             success=True,

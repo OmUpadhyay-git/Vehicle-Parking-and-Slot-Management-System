@@ -25,7 +25,12 @@ router = APIRouter()
 @router.post("/parking/entry", response_model=ParkingEntryResponse)
 def park_vehicle_endpoint(entry: ParkingEntry, db: Session = Depends(get_db)):
     try:
-        result = park_vehicle(db, entry.vehicle_number, entry.slot_id)
+        result = park_vehicle(
+            db, entry.vehicle_number, entry.slot_id,
+            vehicle_type=entry.vehicle_type,
+            owner_name=entry.owner_name,
+            owner_phone=entry.owner_phone,
+        )
         if not result["success"]:
             return ParkingEntryResponse(success=False, message=result["message"])
 

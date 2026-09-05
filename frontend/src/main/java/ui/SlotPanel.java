@@ -30,11 +30,26 @@ public class SlotPanel extends JPanel {
         setBackground(Color.WHITE);
 
         // Top bar
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(new Color(236, 240, 241));
         JLabel titleLabel = new JLabel("  Parking Slot Management");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        topBar.add(titleLabel);
+        topBar.add(titleLabel, BorderLayout.WEST);
+
+        JButton refreshBtn = new JButton("Refresh");
+        refreshBtn.setFont(new Font("SansSerif", Font.BOLD, 11));
+        refreshBtn.setForeground(Color.WHITE);
+        refreshBtn.setBackground(new Color(52, 152, 219));
+        refreshBtn.setBorderPainted(false);
+        refreshBtn.setFocusPainted(false);
+        refreshBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        refreshBtn.addActionListener(e -> loadSlots());
+
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        rightPanel.add(refreshBtn);
+        topBar.add(rightPanel, BorderLayout.EAST);
+
         add(topBar, BorderLayout.NORTH);
 
         // Toolbar
@@ -46,6 +61,9 @@ public class SlotPanel extends JPanel {
         addSlotBtn.setBackground(new Color(46, 204, 113));
         addSlotBtn.setForeground(Color.WHITE);
         addSlotBtn.setFocusPainted(false);
+        addSlotBtn.setOpaque(true);
+        addSlotBtn.setContentAreaFilled(true);
+        addSlotBtn.setBorderPainted(false);
         toolbar.add(addSlotBtn);
 
         toolbar.add(new JLabel("    Filter:"));
@@ -284,9 +302,15 @@ public class SlotPanel extends JPanel {
         buttonPanel.setBackground(Color.WHITE);
         JButton cancelBtn = new JButton("CANCEL");
         cancelBtn.setBackground(new Color(189, 195, 199));
+        cancelBtn.setOpaque(true);
+        cancelBtn.setContentAreaFilled(true);
+        cancelBtn.setBorderPainted(false);
         JButton saveBtn = new JButton("SAVE");
         saveBtn.setBackground(new Color(46, 204, 113));
         saveBtn.setForeground(Color.WHITE);
+        saveBtn.setOpaque(true);
+        saveBtn.setContentAreaFilled(true);
+        saveBtn.setBorderPainted(false);
         buttonPanel.add(cancelBtn);
         buttonPanel.add(saveBtn);
 
